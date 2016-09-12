@@ -1,84 +1,274 @@
+#US EPA Gulf Ecology Division Illumina MiSeq 16S EMP sequencing workflow, closed reference OTU picking (September 2016)
+#Author: Joe James
 
-#We need to create wed.stability.files which is simply a text file with the samples and the associated fastq files for the forward and reverse reads
-#An example is in L:\lab\GenomicsNutrients\Computing\MiSeq_SOP. This may change a little once the data are in. start with make.contigs for practice with the tutorial data
+	#All files and paths are explicitly written out in this protocol, rather than using "current," for the sake of clarity.
+	#Complete file paths are used so that the mothur folder does not fill up with temporary and intermediate files.
+	#This is an attempt to follow good data hygiene practices. Please change the paths to reflect the environment.
+	#For the purposes of this file, the assumption is that this is being run on a local PC.
+	#When using this script in the mothur Amazon Machine Instance (AMI) follow the instructions found on http://mothur.org/wiki/Mothur_AMI
+	#The tmux program should be used if using the AMI so that if the local machine gets disconnected the processes don't stop on the EC2 instance.
+	#Also, if using the AMI, note that "\" becomes "/" and the tutorial data in the raw folder shoudl be replaced with the data of interest.
+	#The /data/process folder may need to be created or one can follow Pat's lead and output directly in the data/mothur folder.
+	#Most questions can be answered at http://www.mothur.org/wiki/Main_Page.
+	#Much of the language in the comments in this document comes directly from the mothur wiki.
+	
+
+
 make.file(type=gz, input=D:\wed\data\16S\raw\wed.gz, outputdir=D:\wed\data\16S\raw)
-#The result of the make.file command is a fileList.paired.file which we will rename
+
+	#This creates the wed.stability.files which is simply a text file with the samples and the associated fastq files for the forward and reverse reads
+	#An example is found in the mothur MiSeq SOP as well as in L:\lab\GenomicsNutrients\Computing\MiSeq_SOP. 
+	#This may change a little once the data are in. Start with make.contigs if you are practicing with the tutorial data
+	#The result of the make.file command is a fileList.paired.file which we will rename
+
+
 system(rename D:\wed\data\16S\raw\fileList.paired.file wed.stability.files)
-#We will then use the stability files to make contigs and merge the forward and reverse reads
+
+	#The renamed file is to make contigs and merge the forward and reverse reads.
+
+
 make.contigs(file=D:\wed\data\16S\raw\wed.stability.files, inputdir=D:\wed\data\16S\raw, outputdir=D:\wed\data\16S\process, processors=3)
-#Look at the new contigs fasta using summary.seqs
+
+	#Reads the forward fastq and reverse fastq for each sample and outputs new fasta and report files.
+	#Each samples should be listed under Group and the number of sequences in each sample listed under count, with a total for all samples.
+	#This is the first QA check to be sure that all expected samples are present.
+	#Using 3 of 4 available processors.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.fasta)
-#Next we will screen.seqs to remove files that don't fit what we expect. The maxlength will change based on the results of the summary.seqs above
-screen.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.fasta, group=wed.stability.contigs.groups, maxambig=0, maxlength=275)
-#we can look at output to see if it looks better than before by looking at a summary
+
+	#This is the first look at the sequences and should be in a range that is expected. In this case just over 250 bp.
+
+
+screen.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.fasta, group=D:\wed\data\16S\process\wed.stability.contigs.groups, maxambig=0, maxlength=275)
+
+	#Keeps sequences that fulfill uder defined criteria. Files that don't fit what was expected were removed.
+	#Note - the maxlength will change based on the results of the summary.seqs above. In this case 275 was a reasonable cut-off. Anything larger was removed.
+	#Sequences with any ambiguous bases were removed.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.fasta)
-#Next we remove tell mothur to only look at the unique sequences
+
+	#This summary reflects the removal of the sequences.
+
+
 unique.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.fasta)
-#We will simplify the group names next and generate a count table
+
+	#Returns only the unique sequences fround in the fasta and reports the total number of sequences followed by the number of uniques sequences.
+
+
 count.seqs(name=D:\wed\data\16S\process\wed.stability.trim.contigs.good.names, group=D:\wed\data\16S\process\wed.stability.contigs.good.groups)
-#look at the count table with summary.seqs
-summary.seqs(count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.count_table)
-#We have already made the fasta for the v4 region of silva and we can look at that file. This command might take a few minutes.
-summary.seqs(fasta=D:\wed\data\16S\ref\silva.v4.align)
-#align the sample sequences to the reference file
-align.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.fasta, reference=D:\wed\data\16S\ref\silva.v4.align)
-#as usual we should take a look at the sequences to see if we need to rerun screen.seqs (spoiler alert, we probably do)
+	
+	#Counts the number of sequences represented by the representative sequence in a name file.
+	#This command uses the same output files (from screen.seqs) as the previous step.
+
+
+summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.count_table)
+
+	#This summary is nearly identical to the one above, but now the number of unique sequences is included.
+
+
+	#The next step uses a custom length of the silva database, specifically for the V4 region of 16S. 
+	#It is not necessary to remake this everytime, but will be included in this script for completeness.
+	#The commands will be hashed out, but the # can be removed if this file has not been generated.
+	#These commands were not run in the batch. I'm not sure the pcr.seqs command will output to the proper folder.
+
+#pcr.seqs(fasta=D:\wed\data\16S\references\silva.seed_v123.align, start=11894, end=25319, keepdots=F)
+
+	#Output file is silva.full_v123.pcr.align
+
+#system(ren D:\wed\data\16S\references\silva.full_v123.pcr.fasta silva.v4.align)
+
+	#File renamed to silva.v4.align for convenience and clarity.
+
+summary.seqs(fasta=D:\wed\data\16S\references\silva.v4.align)
+
+	#Included 14914 sequences, most of which are 293 bp in length.
+
+
+align.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.fasta, reference=D:\wed\data\16S\references\silva.v4.align)
+
+	#Align the sample sequences to the Silva V4 reference alignment.
+	#Alignment of around 200,000 full length sequences to SILVA takes the Schloss lab less than 3 hours.
+	#Search method is kmer (default)
+	#Kmer size is 8 (default)
+	#Alignment method is needleman (default)
+	#Rewards - match=+1, mismatch=-1, opening gap=-2, extending gam=-1 (default)
+	#Alignment is deemed bad if 50% of bases are removed (default)
+	#Reverse complement is not used, flip=f (default)
+	#Three processors are used because it was specified above
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.align, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.count_table)
-#Find the start and end values for the bulk of the sequences. rerun screen.seqs with these new values, as well as remove homopolymers above the number of the bulk of sequences
+
+	
+	#The start and end should have changed from before to align with the Silva V4 16S.
+	#Screen.seqs should be run again using the start and end values generated at this step.
+
+
 screen.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.align, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.count_table, summary=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.summary, start=1968, end=11550, maxhomop=8)
-#next we'll want to look at the summary again, followed by removal of the overhangs at then ends. there won't be many since we did paired end sequencing.
+	
+	#The start and end values (1968, 11550) might change depending on the results of the align.seqs command.
+	#Sequences with homopolymers greater than 8 were also removed.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.align, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.good.count_table)
+
+	#Sequences should be more uniform now.
+	#Number of unique and total sequences should have gone down.
+
 filter.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.align, vertical=T, trump=.)
-#the last command told us our final alignment length. since we trimmed the ends we'll run unique.seqs again to remove any redundancies
+
+	#Removed columns with no real information (- or .).
+	#Overhangs at the ends were also removed. Shouldn't have been many since paired-end sequencing was used.
+	#Generated length of filtered alignment, number of columns removed, length of original alignment, and number of sequences used to construct filter.
+
+
 unique.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.good.count_table)
-#looking at a summary will tell us how many reduntant sequences we removed
+
+	#Trimming the ends likely generated some redundancies, which unique.seqs removed.
+	#Reports number of uniques it started with and how many it ended with.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.count_table)
-#denoise the sequences using pre.cluster and allow up to 2 differences between sequences
+
+	#compare this to the last summary.seqs result and note the decrease in unique sequences.
+
+
 pre.cluster(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.count_table, diffs=2)
+
+	#Denoise the sequences by removing sequences that are likely due to sequencing error.
+	#Allow up to 2 differences between sequences to be considered the same sequence.
+	#Rule of thumb is 1 difference per 100 bp of sequence.
+	#This generates a lot of output files, including a .map file for each sample.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.count_table)
-#chimeras will exist in our sequence and we will remove them using uchime
-chimera.uchime(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.count_table, dereplicate=t)
-#while chimera.uchime removes the chimeras from the count file, we have to run a command to remove them from the fasta
+
+	#Expect a significant drop in the number of unique sequences. The total number of sequences should be unchanged.
+
+
+chimera.uchime(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.count_table, dereplicate=t, processors=1)
+
+	#Chimeras are generated in the PCR step and are removed from our sequences using uchime
+	#Only one processor is used (it's the default) because this step caused mothur to close unexpectedly on occassion.
+	#while chimera.uchime removes the chimeras from the count file, they must be removed from the fasta.
+
+
 remove.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.fasta, accnos=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.accnos)
-#run a summary to see what we're left with
+
+	#The chimeras are removed and the number of sequences removed will be reported.
+	
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table)
-#we want to remove chloroplasts and mitochondria. on the mothur sop they remove archaea, but the EMP primers should pick up archaea so we keep those
-#first we'll have to classify them, then we'll remove the unwanted lineages
-classify.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, reference=D:\wed\data\16S\ref\trainset9_032012.pds.fasta, taxonomy=D:\wed\data\16S\ref\trainset9_032012.pds.tax, cutoff=80)
+
+	#The change in sequences after removal of chimeras should be noted.
+
+
+classify.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, reference=D:\wed\data\16S\references\trainset9_032012.pds.fasta, taxonomy=D:\wed\data\16S\references\trainset9_032012.pds.tax, cutoff=80, processors=3)
+
+	#This was done using the RDP trainset data as well as the full silva data, with the exact same results.
+	#The trainset data are smaller and the process runs much more quickly, so that option is chosen here.
+	#Three processors were chosen to make that the default number again.
+
+
 remove.lineage(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, taxonomy=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.taxonomy, taxon=Chloroplast-Mitochondria-unknown-Eukaryota)
-#take a look to see how many unique sequences are left
+
+	#Chloroplasts, mitochondria, eukaryotes, and unknown were removed.
+	#In the mothur MiSeq SOP they remove archaea, but the EMP primers should pick up archaea so they are kept in this protocol.
+
+
 summary.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.count_table)
-#the error rate can be assessed if a mock community was run. you should not use the mock to set up your quality parameters, but it is helpful to report.
+
+	#Note the drop in the number of unique sequences.
+
+	#The error rate can be assessed on the mock community. 
+	#The mock should not be used to set up your quality parameters, but it is helpful to report.
+
 get.groups(count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.count_table, fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, groups=Mock)
-#the number of unique sequences will be displayed, as well as the total number of sequences. to assess the error rate we check the sequence error against the known sequences of the mock
-seq.error(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, reference=D:\wed\data\16S\ref\HMP_MOCK.v35.fasta, aligned=F)
-#it is sometimes difficult to see the error rate on the screen. the error rate will be in the log file.
-#cluster the mock sequences into OTU to see how many spurious OTU we have. the following commands work with the files generated above after get.groups so it only includes the mock community.
+
+	#Only the Mock sample has been selected. 
+	#The number of sequences in the fasta and count will be reported.
+	#For multiple Mock samples, different names should be used for each. Variable for groups= will be the name1-name-2-name1-etc. 
+	
+
+seq.error(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, reference=D:\wed\data\16S\references\HMP_MOCK.v35.fasta, aligned=F)
+
+	#The sequences in the Mock samples are compared to the known sequences from the BEI control.
+	#The BEI control is the same as that used for the Human Microbiome Project, thus the HMP name.
+	#The error rate will be reported. Would like this to be below 0.01%.
+
+
+	#The Mock sequences should be clustered into OTU to enumerate the spurious OTU. 
+	#The following commands work with the files generated above after get.groups so they only include the mock community.
+
 dist.seqs(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, cutoff=0.20)
 cluster(column=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.dist, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table)
 make.shared(list=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.list, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, label=0.03)
 rarefaction.single(shared=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.shared)
-#the file generated is a .rarefaction file and provides the data\16S for a rarefaction curve. this tells us how many OTU we have with sampling depth. do NOT expect the exact number in the mock community. it will be larger.
-#moving forward, we want to remove the mock community from the analysis
+
+	#The cutoff for the dist.seqs is higher than is used later.
+	#The file generated is a .rarefaction file and provides the data for a rarefaction curve. 
+	#Opening the rarefaction file in a browser displays the number of OTU for the Mock community at different sampling depths.
+	#Do NOT expect the exact number in the mock community. It will be larger. In the MiSeq SOP for 4061 sequences there are 35 OTU from Mock. Perfect is 20.
+
+
+	#For all further analysis the mock community sequences are removed.
+
 remove.groups(count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.count_table, fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, taxonomy=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.taxonomy, groups=Mock)
-#we will cluster the remaining samples. wed is a large data\16Sset so splitting the clusters is more efficient.
+
+	#Cluster the sample sequences to OTU. wed is a large dataset so splitting the clusters is more efficient.
+
+
 cluster.split(fasta=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, taxonomy=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, splitmethod=classify, taxlevel=4, cutoff=0.15, processors=3)
-#to find out how many sequences are in each OTU from each group we use make.shared, and we're interested up to a 0.03 cutoff, or 97% similiarity. the input is the file we just generated in the previous step.
+
+	#The split method uses distance and the taxonomy file.
+	#The taxlevel of 4 corresponds to Order.
+
+
 make.shared(list=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.list, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, label=0.03)
-#we get the consensus taxonomy for our OTU with the classify.out command
+
+	#Shared file includes the number of sequences in each OTU from each group.
+	#The 97% similarity is chosen (0.03 cutoff).
+
+
 classify.otu(list=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.list, count=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, taxonomy=D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, label=0.03)
-#open the .taxonomy file generated by the previous command to see the number of times an OTU was observed and the percent that were classified to that genus
-#we want to perform some analysis, but those names are getting unweildy. we'll change them to tidy things up.
+
+	#Consensus taxonomy for each OTU.
+	#Taxonomy file reports number of times an OTU was observed and the percent that were classified to the Genus displayed.
+
+
+	#Rename the files to less unweildy names.
+	
 system(rename D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.shared wed.stability.an.shared)
 system(rename D:\wed\data\16S\process\wed.stability.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.an.unique_list.0.03.cons.taxonomy wed.stability.an.cons.taxonomy)
-#The shared and taxonomy files an be taken into primer or R for analysis. the following commands are for further analysis within mothur
-#next we'll want to see how many sequences are in each sample
+
+
+	#The following commands are for further analysis within mothur, primarily looking at alpha diversity.
+
+
 count.groups(shared=D:\wed\data\16S\process\wed.stability.an.shared)
-#we now see the number of sequences per sample. it is important to rarefy to the lowest number of sequences. this value will change depending on the output above. the number 2439 will change.
+
+	#Reports the number of sequences per sample.
+	 
+
 sub.sample(shared=D:\wed\data\16S\process\wed.stability.an.shared, size=2439)
-#looking at alpha diversity first generate a rarefaction curve describing OTS as a function of sampling effort
+
+	#Rarefies to the sample with the smallest number of sequences. 
+	#This value will change depending on the output of count.groups, so the number 2439 will change.
+	#Use this rarefied shared file for further analysis.
+
+
 rarefaction.single(shared=D:\wed\data\16S\process\wed.stability.an.shared, calc=sobs, freq=100)
-#generate a table with sequence number, coverage, OTU number, and inverse simpson diversity. subsample=T tells the command to use the size of the smallest library. the output is a summary file.
+
+	#This provides the first look at alpha diversity by generating a rarefaction curve describing OTU as a function of sampling effort.
+
+
 summary.single(shared=D:\wed\data\16S\process\wed.stability.an.shared, calc=nseqs-coverage-sobs-invsimpson, subsample=T)
-#Beta diversity is better assessed in Primer or R. The real goal of this analysis in mothur is to get good taxonomy and shared files for further analysis.
+
+	#Generates a table with sequence number, coverage, OTU number, and inverse simpson diversity. 
+	#Subsample=T tells the command to use the size of the smallest library. 
+	#output is a summary file.
+
+	#Beta diversity is better assessed in Primer or R. The real goal of this analysis in mothur is to get good taxonomy and shared files for further analysis.
 
