@@ -36,6 +36,11 @@ set.dir(output=D:\wed\data\18S\process)
 
 make.contigs(processors=3, ffastq=D:\wed\data\18S\raw\wed_18S_R1_001.fastq, rfastq=D:\wed\data\18S\raw\wed_18s_R2_001.fastq, rindex=D:\wed\data\18S\raw\wed_18s_I1_001.fastq, oligos=D:\wed\data\18S\raw\wed_18s_oligos.txt, checkorient=t)
 
+system(rename D:\wed\data\18S\process\wed_18S_R1_001.trim.contigs.fasta wed_18S.trim.contigs.fasta)
+system(rename D:\wed\data\18S\process\wed_18S_R1_001.trim.contigs.qual wed_18S.trim.contigs.qual)
+system(rename D:\wed\data\18S\process\wed_18S_R1_001.contigs.report wed_18S.contigs.report)
+system(rename D:\wed\data\18S\process\wed_18S_R1_001.contigs.groups wed_18S.contigs.groups)
+
 summary.seqs(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.fasta)
 
 	#This is the first look at the sequences and should be in a range that is expected. In this case just over 115 bp.
@@ -181,12 +186,12 @@ summary.seqs(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good
 	#The change in sequences after removal of chimeras should be noted.
 
 
-classify.seqs(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, reference=D:\wed\data\18S\references\silva.nr_v123.align, taxonomy=D:\wed\data\18S\referencessilva.nr_v123.tax, cutoff=80)
+classify.seqs(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, reference=D:\wed\data\18S\references\silva.nr_v123.align, taxonomy=D:\wed\data\18S\references\silva.nr_v123.tax, cutoff=80)
 
 	#This was done using the full silva dataset.
 	#Three processors were chosen to make that the default number again.
 
-remove.lineage(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, taxonomy=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.taxonomy, taxon=Chloroplast-Mitochondria-unknown-Bacteria-Archaea)
+remove.lineage(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.count_table, taxonomy=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.nr_v123.wang.taxonomy, taxon=Chloroplast-Mitochondria-unknown-Bacteria-Archaea)
 
 	#Chloroplasts, mitochondria, bacteria, archaea, and unknown were removed.
 	
@@ -199,14 +204,14 @@ summary.seqs(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good
 	#The mock should not be used to set up your quality parameters, but it is helpful to report.
 
 
-get.groups(count=D:\wed\data\18S\process\wed.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.count_table, fasta=D:\wed\data\18S\process\wed.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, groups=Mock)
+get.groups(count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.count_table, fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, groups=Mock)
 
 	#Only the Mock sample has been selected. 
 	#The number of sequences in the fasta and count will be reported.
 	#For multiple Mock samples, different names should be used for each. Variable for groups= will be the name1-name-2-name1-etc. 
 
 
-seq.error(fasta=D:\wed\data\18S\process\wed.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=D:\wed\data\18S\process\wed.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, reference=D:\wed\data\18S\ref\d3_gb_mock.fasta, aligned=F)
+seq.error(fasta=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=D:\wed\data\18S\process\wed_18S.trim.contigs.good.unique.good.filter.unique.precluster.denovo.uchime.pick.pick.pick.count_table, reference=D:\wed\data\18S\ref\d3_gb_mock.fasta, aligned=F)
 
 	#The sequences in the Mock samples are compared to the known NCBI sequences from the species known to be in the mock.
 	#The error rate will be reported. Would like this to be below 0.01%.
@@ -264,7 +269,7 @@ count.groups(shared=D:\wed\data\18S\process\wed_18S.an.shared)
 	#Reports the number of sequences per sample.
 
 
-sub.sample(shared=D:\wed\data\18S\process\wed_18S.an.shared, size=5860)
+sub.sample(shared=D:\wed\data\18S\process\wed_18S.an.shared, size=5373)
 
 	#Rarefies to the sample with the smallest number of sequences. 
 	#This value will change depending on the output of count.groups, so the number 2439 will change.
